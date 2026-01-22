@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aurecell Chat Widget</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ac-gold: #C9A962;
+            --ac-gold-dark: #A88B4A;
+            --ac-gold-light: #E8C97D;
+            --ac-gold-glow: rgba(201, 169, 98, 0.4);
+            --ac-bg-primary: #FAF8F5;
+            --ac-bg-secondary: #F5F0E8;
+            --ac-bg-dark: #262626;
+            --ac-bg-dark-light: #3a3a3a;
+            --ac-text-primary: #262626;
+            --ac-text-light: #F5E6C4;
+            --ac-text-muted: #9A9A9A;
+            --ac-border: #E0D9CE;
+            --ac-user-bubble: #262626;
+            --ac-bot-bubble: #FAF8F5;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: transparent !important;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        #ac-chat-button,
+        #ac-chat-container {
+            pointer-events: auto;
+        }
+
+        /* ===== CHAT WIDGET BUTTON ===== */
+        #ac-chat-button {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--ac-gold) 0%, var(--ac-gold-dark) 100%);
+            border: none;
+            cursor: pointer;
+            z-index: 2147483647;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 4px 20px var(--ac-gold-glow),
+                0 0 0 0 var(--ac-gold-glow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: ac-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes ac-pulse {
+            0%, 100% { box-shadow: 0 4px 20px var(--ac-gold-glow), 0 0 0 0 var(--ac-gold-glow); }
+            50% { box-shadow: 0 4px 30px var(--ac-gold-glow), 0 0 0 8px rgba(201, 169, 98, 0); }
+        }
+
+        #ac-chat-button:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 30px var(--ac-gold-glow);
+        }
+
+        #ac-chat-button:active {
+            transform: scale(0.95);
+        }
+
+        #ac-chat-button svg {
+            width: 26px;
+            height: 26px;
+            stroke: var(--ac-bg-dark);
+            fill: none;
+            transition: transform 0.3s ease;
+        }
+
+        #ac-chat-button:hover svg {
+            transform: scale(1.1);
+        }
+
+        #ac-chat-button.ac-hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.8);
+        }
+
+        /* ===== CHAT CONTAINER ===== */
+        #ac-chat-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 380px;
+            height: 520px;
+            max-height: calc(100vh - 48px);
+            background: var(--ac-bg-primary);
+            border-radius: 16px;
+            border: 1px solid var(--ac-border);
+            box-shadow: 0 10px 40px rgba(38, 38, 38, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 2147483647;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #ac-chat-container.ac-open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        /* ===== HEADER ===== */
+        #ac-chat-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--ac-bg-dark) 0%, var(--ac-bg-dark-light) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .ac-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ac-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--ac-gold) 0%, var(--ac-gold-light) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--ac-bg-dark);
+        }
+
+        .ac-header-info h3 {
+            color: var(--ac-text-light);
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .ac-header-info .ac-status {
+            color: var(--ac-gold);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        #ac-close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        #ac-close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        #ac-close-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--ac-text-light);
+            transition: stroke 0.2s ease;
+        }
+
+        #ac-close-btn:hover svg {
+            stroke: white;
+        }
+
+        /* ===== MESSAGES AREA ===== */
+        #ac-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: var(--ac-bg-secondary);
+            scroll-behavior: smooth;
+        }
+
+        #ac-chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #ac-chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #ac-chat-messages::-webkit-scrollbar-thumb {
+            background: var(--ac-border);
+            border-radius: 3px;
+        }
+
+        /* ===== MESSAGE BUBBLES ===== */
+        .ac-message {
+            max-width: 80%;
+            animation: ac-message-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes ac-message-in {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ac-message.ac-user {
+            align-self: flex-end;
+        }
+
+        .ac-message.ac-bot {
+            align-self: flex-start;
+        }
+
+        .ac-message-content {
+            padding: 12px 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .ac-user .ac-message-content {
+            background: var(--ac-user-bubble);
+            color: var(--ac-text-light);
+            border-radius: 16px 16px 4px 16px;
+        }
+
+        .ac-bot .ac-message-content {
+            background: var(--ac-bot-bubble);
+            color: var(--ac-text-primary);
+            border: 1px solid var(--ac-border);
+            border-radius: 16px 16px 16px 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        /* ===== TYPING INDICATOR ===== */
+        .ac-typing {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 16px;
+            background: var(--ac-bot-bubble);
+            border-radius: 16px 16px 16px 4px;
+            border: 1px solid var(--ac-border);
+            width: fit-content;
+        }
+
+        .ac-typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--ac-gold);
+            border-radius: 50%;
+            animation: ac-typing-bounce 1s infinite ease-in-out;
+        }
+
+        .ac-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .ac-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        .ac-typing-dot:nth-child(3) { animation-delay: 0s; }
+
+        @keyframes ac-typing-bounce {
+            0%, 80%, 100% { 
+                transform: scale(0.8);
+                opacity: 0.4;
+            }
+            40% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* ===== INPUT AREA ===== */
+        #ac-chat-input-area {
+            padding: 16px;
+            background: var(--ac-bg-primary);
+            border-top: 1px solid var(--ac-border);
+            flex-shrink: 0;
+        }
+
+        .ac-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #ac-chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 24px;
+            border: 1px solid var(--ac-border);
+            background: var(--ac-bg-secondary);
+            color: var(--ac-text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        #ac-chat-input:focus {
+            border-color: var(--ac-gold);
+        }
+
+        #ac-chat-input::placeholder {
+            color: var(--ac-text-muted);
+        }
+
+        #ac-send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--ac-gold) 0%, var(--ac-gold-dark) 100%);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        #ac-send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        #ac-send-btn:disabled {
+            background: var(--ac-border);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #ac-send-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--ac-bg-dark);
+            fill: none;
+        }
+
+        .ac-powered-by {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--ac-text-muted);
+        }
+
+        .ac-powered-by a {
+            color: var(--ac-gold);
+            text-decoration: none;
+        }
+
+        .ac-powered-by a:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== MOBILE RESPONSIVE ===== */
+        @media (max-width: 480px) {
+            #ac-chat-container {
+                bottom: 0;
+                right: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                max-height: 100%;
+                border-radius: 0;
+            }
+
+            #ac-chat-button {
+                bottom: 16px;
+                right: 16px;
+                width: 56px;
+                height: 56px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Chat Widget Button -->
+    <button id="ac-chat-button" aria-label="Open chat">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+    </button>
+
+    <!-- Chat Container -->
+    <div id="ac-chat-container" role="dialog" aria-label="Chat with Aurecell">
+        <!-- Header -->
+        <header id="ac-chat-header">
+            <div class="ac-header-left">
+                <div class="ac-avatar">A</div>
+                <div class="ac-header-info">
+                    <h3>Aurecell Assistant</h3>
+                    <div class="ac-status">Research Support</div>
+                </div>
+            </div>
+            <button id="ac-close-btn" aria-label="Close chat">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6l12 12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </header>
+
+        <!-- Messages -->
+        <div id="ac-chat-messages">
+            <div class="ac-message ac-bot">
+                <div class="ac-message-content">Welcome to Aurecell. How can I assist you with your research today?</div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div id="ac-chat-input-area">
+            <div class="ac-input-wrapper">
+                <input 
+                    type="text" 
+                    id="ac-chat-input" 
+                    placeholder="Ask about our premium peptides..." 
+                    autocomplete="off"
+                    aria-label="Chat message"
+                >
+                <button id="ac-send-btn" aria-label="Send message">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" fill="none"></polygon>
+                    </svg>
+                </button>
+            </div>
+            <div class="ac-powered-by">
+                Powered by <a href="https://nutricove.co/" target="_blank" rel="noopener noreferrer">NutriCove LLC.</a> - For Research Inquiries Only
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURATION =====
+        const WEBHOOK_URL = 'https://n8n.nutricove.co/webhook/inbound';
+
+        // ===== DOM ELEMENTS =====
+        const chatButton = document.getElementById('ac-chat-button');
+        const chatContainer = document.getElementById('ac-chat-container');
+        const closeBtn = document.getElementById('ac-close-btn');
+        const messagesContainer = document.getElementById('ac-chat-messages');
+        const chatInput = document.getElementById('ac-chat-input');
+        const sendBtn = document.getElementById('ac-send-btn');
+
+        // ===== SESSION MANAGEMENT =====
+        function getSessionId() {
+            let sessionId = sessionStorage.getItem('aurecell_session_id');
+            if (!sessionId) {
+                sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+                sessionStorage.setItem('aurecell_session_id', sessionId);
+            }
+            return sessionId;
+        }
+
+        // ===== CHAT OPEN/CLOSE =====
+        function openChat() {
+            chatContainer.classList.add('ac-open');
+            chatButton.classList.add('ac-hidden');
+            chatInput.focus();
+            window.parent.postMessage({ type: 'ac-chat-open' }, '*');
+        }
+
+        function closeChat() {
+            chatContainer.classList.remove('ac-open');
+            chatButton.classList.remove('ac-hidden');
+            window.parent.postMessage({ type: 'ac-chat-close' }, '*');
+        }
+
+        chatButton.addEventListener('click', openChat);
+        closeBtn.addEventListener('click', closeChat);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && chatContainer.classList.contains('ac-open')) {
+                closeChat();
+            }
+        });
+
+        // ===== MESSAGE HANDLING =====
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `ac-message ${isUser ? 'ac-user' : 'ac-bot'}`;
+            messageDiv.innerHTML = `<div class="ac-message-content">${escapeHtml(content)}</div>`;
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
+            return messageDiv;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function addTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'ac-message ac-bot ac-typing-container';
+            typingDiv.id = 'ac-typing';
+            typingDiv.innerHTML = `
+                <div class="ac-typing">
+                    <div class="ac-typing-dot"></div>
+                    <div class="ac-typing-dot"></div>
+                    <div class="ac-typing-dot"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(typingDiv);
+            scrollToBottom();
+            return typingDiv;
+        }
+
+        function removeTypingIndicator() {
+            const typing = document.getElementById('ac-typing');
+            if (typing) typing.remove();
+        }
+
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // ===== SEND MESSAGE =====
+        async function sendMessage(messageText) {
+            if (!messageText.trim()) return;
+
+            chatInput.disabled = true;
+            sendBtn.disabled = true;
+
+            addMessage(messageText, true);
+            chatInput.value = '';
+
+            const typingIndicator = addTypingIndicator();
+
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: messageText,
+                        sessionId: getSessionId()
+                    })
+                });
+
+                const data = await response.json();
+                removeTypingIndicator();
+                
+                const botResponse = data.response || data.output || data.message || "I apologize, I couldn't process that request. Please try again.";
+                addMessage(botResponse, false);
+
+            } catch (error) {
+                console.error('Chat error:', error);
+                removeTypingIndicator();
+                addMessage("I'm having trouble connecting right now. Please try again in a moment.", false);
+            }
+
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+            chatInput.focus();
+        }
+
+        // ===== EVENT LISTENERS =====
+        sendBtn.addEventListener('click', () => sendMessage(chatInput.value));
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(chatInput.value);
+            }
+        });
+
+        // ===== INITIALIZE =====
+        getSessionId();
+    </script>
+
+</body>
+</html>
